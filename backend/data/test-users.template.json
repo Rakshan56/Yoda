@@ -1,0 +1,34 @@
+[
+  {
+    "id": "new-trainer",
+    "email": "new.trainer@example.test",
+    "password": "NewTrainerLocal123!",
+    "display_name": "New Trainer",
+    "role": "USER",
+    "purpose": "Fresh account and guest-to-authenticated flow testing"
+  },
+  {
+    "id": "progress-trainer",
+    "email": "progress.trainer@example.test",
+    "password": "ProgressTrainerLocal123!",
+    "display_name": "Progress Trainer",
+    "role": "USER",
+    "purpose": "Collection, game progress, checklist, and saved team testing"
+  },
+  {
+    "id": "helper-trainer",
+    "email": "helper.trainer@example.test",
+    "password": "HelperTrainerLocal123!",
+    "display_name": "Helper Trainer",
+    "role": "USER",
+    "purpose": "Helper conversations, bookmarks, and profile testing"
+  },
+  {
+    "id": "admin-reviewer",
+    "email": "admin.reviewer@example.test",
+    "password": "AdminReviewerLocal123!",
+    "display_name": "Admin Reviewer",
+    "role": "ADMIN",
+    "purpose": "Admin dashboard, reports, quality issues, and source registry testing"
+  }
+]

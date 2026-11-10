@@ -1,0 +1,849 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  UNKNOWN
+}
+
+enum ContentStatus {
+  NOT_IMPORTED
+  DRAFT
+  NEEDS_REVIEW
+  VERIFIED
+  PUBLISHED
+}
+
+enum CollectionStatus {
+  SEEN
+  CAUGHT
+  OWNED
+  WANTED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+enum SourceType {
+  API
+  WIKI
+  REPOSITORY
+  MANUAL
+}
+
+enum FlagType {
+  STORY
+  BADGE
+  ITEM
+  OPTIONAL
+}
+
+model Region {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  games       Game[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Game {
+  id                  String               @id
+  name                String
+  generation          Int
+  platform            String
+  regionId            String
+  releaseYear         Int
+  versionGroup        String
+  boxArtUrl           String?
+  description         String?
+  isActive            Boolean              @default(true)
+  region              Region               @relation(fields: [regionId], references: [id])
+  gamePokemon         GamePokemon[]
+  pokemonMoves        PokemonMove[]
+  encounters          Encounter[]
+  collections         UserCollection[]
+  teams               Team[]
+  locations           Location[]
+  walkthroughChapters WalkthroughChapter[]
+  battles             Battle[]
+  quests              Quest[]
+  locationConnections LocationConnection[] @relation("connectionGame")
+  locationItems       LocationItem[]
+  shops               Shop[]
+  trainers            Trainer[]
+  checklists          ChecklistTemplate[]
+  flags               GameFlag[]
+  importRuns          DataImportRun[]
+  qualityIssues       DataQualityIssue[]
+  contentSources      ContentSource[]
+  users               UserGameProgress[]
+  helperConversations HelperConversation[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([regionId])
+}
+
+model PokemonSpecies {
+  id                String        @id @default(cuid())
+  name              String
+  nationalDexNumber Int           @unique
+  generation        Int
+  captureRate       Int?
+  baseHappiness     Int?
+  growthRate        String?
+  isLegendary       Boolean       @default(false)
+  isMythical        Boolean       @default(false)
+  description       String?
+  pokemon           Pokemon?
+  forms             PokemonForm[]
+  evolutionsFrom    Evolution[]   @relation("evolutionFrom")
+  evolutionsTo      Evolution[]   @relation("evolutionTo")
+
+  @@index([name])
+}
+
+model Pokemon {
+  id               String           @id @default(cuid())
+  speciesId        String           @unique
+  name             String
+  height           Int?
+  weight           Int?
+  baseExperience   Int?
+  spriteFront      String?
+  spriteBack       String?
+  spriteShinyFront String?
+  spriteShinyBack  String?
+  species          PokemonSpecies   @relation(fields: [speciesId], references: [id])
+  stats            PokemonStat?
+  types            PokemonType[]
+  abilities        PokemonAbility[]
+  gamePokemon      GamePokemon[]
+  moves            PokemonMove[]
+  encounters       Encounter[]
+  teamMembers      TeamMember[]
+  collection       UserCollection[]
+  trainerPokemon   TrainerPokemon[]
+  checklistItems   ChecklistItem[]
+
+  @@index([name])
+}
+
+model Evolution {
+  id            String         @id @default(cuid())
+  fromSpeciesId String
+  toSpeciesId   String
+  trigger       String
+  minLevel      Int?
+  itemId        String?
+  conditionJson Json?
+  fromSpecies   PokemonSpecies @relation("evolutionFrom", fields: [fromSpeciesId], references: [id], onDelete: Cascade)
+  toSpecies     PokemonSpecies @relation("evolutionTo", fields: [toSpeciesId], references: [id], onDelete: Cascade)
+  item          Item?          @relation(fields: [itemId], references: [id])
+
+  @@unique([fromSpeciesId, toSpeciesId, trigger])
+  @@index([toSpeciesId])
+}
+
+model PokemonStat {
+  pokemonId      String  @id
+  hp             Int
+  attack         Int
+  defense        Int
+  specialAttack  Int
+  specialDefense Int
+  speed          Int
+  pokemon        Pokemon @relation(fields: [pokemonId], references: [id], onDelete: Cascade)
+}
+
+model Type {
+  id        String              @id
+  name      String              @unique
+  offensive TypeEffectiveness[] @relation("attacking")
+  defensive TypeEffectiveness[] @relation("defending")
+  pokemon   PokemonType[]
+  moves     Move[]
+}
+
+model TypeEffectiveness {
+  attackingTypeId String
+  defendingTypeId String
+  multiplier      Float
+  attacking       Type   @relation("attacking", fields: [attackingTypeId], references: [id], onDelete: Cascade)
+  defending       Type   @relation("defending", fields: [defendingTypeId], references: [id], onDelete: Cascade)
+
+  @@id([attackingTypeId, defendingTypeId])
+}
+
+model PokemonType {
+  pokemonId String
+  typeId    String
+  slot      Int
+  pokemon   Pokemon @relation(fields: [pokemonId], references: [id], onDelete: Cascade)
+  type      Type    @relation(fields: [typeId], references: [id])
+
+  @@id([pokemonId, typeId])
+}
+
+model Ability {
+  id             String           @id
+  name           String           @unique
+  effect         String?
+  shortEffect    String?
+  pokemon        PokemonAbility[]
+  trainerPokemon TrainerPokemon[]
+}
+
+model PokemonAbility {
+  pokemonId String
+  abilityId String
+  slot      Int
+  isHidden  Boolean @default(false)
+  pokemon   Pokemon @relation(fields: [pokemonId], references: [id], onDelete: Cascade)
+  ability   Ability @relation(fields: [abilityId], references: [id])
+
+  @@id([pokemonId, abilityId])
+}
+
+model PokemonForm {
+  id             String         @id @default(cuid())
+  speciesId      String
+  name           String
+  formIdentifier String
+  isDefault      Boolean        @default(false)
+  spriteFront    String?
+  species        PokemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+}
+
+model GamePokemon {
+  gameId             String
+  pokemonId          String
+  availabilityStatus AvailabilityStatus
+  availabilityNotes  String?
+  validationStatus   ContentStatus      @default(NEEDS_REVIEW)
+  game               Game               @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  pokemon            Pokemon            @relation(fields: [pokemonId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, pokemonId])
+}
+
+model Move {
+  id           String           @id
+  name         String           @unique
+  typeId       String
+  power        Int?
+  accuracy     Int?
+  pp           Int?
+  priority     Int              @default(0)
+  effect       String?
+  target       String?
+  generation   Int
+  type         Type             @relation(fields: [typeId], references: [id])
+  pokemonMoves PokemonMove[]
+  teamMoves    TeamMemberMove[]
+}
+
+model PokemonMove {
+  id           String  @id @default(cuid())
+  pokemonId    String
+  moveId       String
+  gameId       String
+  learnMethod  String
+  levelLearned Int?
+  versionGroup String?
+  pokemon      Pokemon @relation(fields: [pokemonId], references: [id], onDelete: Cascade)
+  move         Move    @relation(fields: [moveId], references: [id])
+  game         Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([pokemonId, moveId, gameId, learnMethod])
+}
+
+model Item {
+  id             String           @id
+  name           String           @unique
+  category       String?
+  effect         String?
+  evolutions     Evolution[]
+  locationItems  LocationItem[]
+  shopInventory  ShopInventory[]
+  trainerPokemon TrainerPokemon[]
+  checklistItems ChecklistItem[]
+}
+
+model Location {
+  id                  String               @id @default(cuid())
+  gameId              String
+  name                String
+  slug                String
+  region              String
+  description         String?
+  mapAssetUrl         String?
+  completeness        ContentStatus        @default(NOT_IMPORTED)
+  game                Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  encounters          Encounter[]
+  outgoingConnections LocationConnection[] @relation("fromLocation")
+  incomingConnections LocationConnection[] @relation("toLocation")
+  items               LocationItem[]
+  shops               Shop[]
+  trainers            Trainer[]
+  quests              Quest[]
+  chapterStarts       WalkthroughChapter[] @relation("chapterStart")
+  chapterEnds         WalkthroughChapter[] @relation("chapterEnd")
+  battles             Battle[]
+  checklistItems      ChecklistItem[]
+  walkthroughSteps    WalkthroughStep[]
+  contentSources      ContentSource[]
+
+  @@unique([gameId, slug])
+}
+
+model Encounter {
+  id               String          @id @default(cuid())
+  gameId           String
+  locationId       String
+  pokemonId        String
+  method           String
+  minLevel         Int
+  maxLevel         Int
+  encounterRate    Float?
+  conditionsJson   Json?
+  validationStatus ContentStatus   @default(NEEDS_REVIEW)
+  game             Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  location         Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  pokemon          Pokemon         @relation(fields: [pokemonId], references: [id])
+  contentSources   ContentSource[]
+
+  @@index([gameId, locationId, method])
+}
+
+model LocationConnection {
+  id              String   @id @default(cuid())
+  gameId          String
+  fromLocationId  String
+  toLocationId    String
+  connectionType  String
+  unlockCondition Json?
+  game            Game     @relation("connectionGame", fields: [gameId], references: [id], onDelete: Cascade)
+  fromLocation    Location @relation("fromLocation", fields: [fromLocationId], references: [id], onDelete: Cascade)
+  toLocation      Location @relation("toLocation", fields: [toLocationId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, fromLocationId, toLocationId, connectionType])
+}
+
+model LocationItem {
+  id                   String        @id @default(cuid())
+  gameId               String
+  locationId           String
+  itemId               String
+  quantity             Int           @default(1)
+  acquisitionMethod    String
+  requiresHiddenSearch Boolean       @default(false)
+  isOneTime            Boolean       @default(true)
+  conditionJson        Json?
+  validationStatus     ContentStatus @default(NEEDS_REVIEW)
+  game                 Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  location             Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  item                 Item          @relation(fields: [itemId], references: [id])
+
+  @@index([gameId, locationId])
+}
+
+model Shop {
+  id         String          @id @default(cuid())
+  gameId     String
+  locationId String
+  name       String
+  game       Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  location   Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  inventory  ShopInventory[]
+
+  @@unique([gameId, locationId, name])
+}
+
+model ShopInventory {
+  id                    String @id @default(cuid())
+  shopId                String
+  itemId                String
+  price                 Int
+  availabilityCondition Json?
+  shop                  Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  item                  Item   @relation(fields: [itemId], references: [id])
+
+  @@unique([shopId, itemId])
+}
+
+model WalkthroughChapter {
+  id              String            @id @default(cuid())
+  gameId          String
+  title           String
+  slug            String
+  chapterNumber   Int
+  summary         String?
+  status          ContentStatus     @default(DRAFT)
+  game            Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  steps           WalkthroughStep[]
+  startLocationId String?
+  endLocationId   String?
+  isPostgame      Boolean           @default(false)
+  spoilerLevel    String            @default("standard")
+  startLocation   Location?         @relation("chapterStart", fields: [startLocationId], references: [id])
+  endLocation     Location?         @relation("chapterEnd", fields: [endLocationId], references: [id])
+  contentSources  ContentSource[]
+
+  @@unique([gameId, slug])
+}
+
+model WalkthroughStep {
+  id                      String             @id @default(cuid())
+  chapterId               String
+  stepNumber              Int
+  title                   String
+  instructions            String
+  isRequired              Boolean            @default(true)
+  isMissable              Boolean            @default(false)
+  warning                 String?
+  completionConditionJson Json?
+  chapter                 WalkthroughChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  locationId              String?
+  location                Location?          @relation(fields: [locationId], references: [id])
+  prerequisites           StepPrerequisite[] @relation("stepPrerequisite")
+  dependentSteps          StepPrerequisite[] @relation("stepDependency")
+
+  @@unique([chapterId, stepNumber])
+}
+
+model StepPrerequisite {
+  id                 String           @id @default(cuid())
+  stepId             String
+  prerequisiteStepId String?
+  prerequisiteFlag   String?
+  conditionJson      Json?
+  step               WalkthroughStep  @relation("stepPrerequisite", fields: [stepId], references: [id], onDelete: Cascade)
+  prerequisiteStep   WalkthroughStep? @relation("stepDependency", fields: [prerequisiteStepId], references: [id])
+
+  @@index([prerequisiteStepId])
+}
+
+model Battle {
+  id             String           @id @default(cuid())
+  gameId         String
+  name           String
+  battleType     String
+  sequenceNumber Int
+  status         ContentStatus    @default(DRAFT)
+  game           Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  locationId     String?
+  location       Location?        @relation(fields: [locationId], references: [id])
+  trainers       BattleTrainer[]
+  strategies     BattleStrategy[]
+  contentSources ContentSource[]
+
+  @@unique([gameId, sequenceNumber, name])
+}
+
+model Trainer {
+  id               String           @id @default(cuid())
+  gameId           String
+  locationId       String?
+  name             String
+  trainerClass     String
+  battleOrder      Int
+  rewardMoney      Int?
+  isRematch        Boolean          @default(false)
+  validationStatus ContentStatus    @default(NEEDS_REVIEW)
+  game             Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  location         Location?        @relation(fields: [locationId], references: [id])
+  pokemon          TrainerPokemon[]
+  battles          BattleTrainer[]
+
+  @@index([gameId, locationId])
+}
+
+model TrainerPokemon {
+  id         String   @id @default(cuid())
+  trainerId  String
+  pokemonId  String
+  level      Int
+  heldItemId String?
+  movesJson  Json?
+  abilityId  String?
+  position   Int
+  trainer    Trainer  @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  pokemon    Pokemon  @relation(fields: [pokemonId], references: [id])
+  heldItem   Item?    @relation(fields: [heldItemId], references: [id])
+  ability    Ability? @relation(fields: [abilityId], references: [id])
+
+  @@unique([trainerId, position])
+}
+
+model BattleTrainer {
+  battleId   String
+  trainerId  String
+  orderIndex Int
+  battle     Battle  @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  trainer    Trainer @relation(fields: [trainerId], references: [id])
+
+  @@id([battleId, trainerId])
+  @@unique([battleId, orderIndex])
+}
+
+model BattleStrategy {
+  id               String        @id @default(cuid())
+  battleId         String
+  recommendedLevel Int?
+  preparation      String?
+  strategyText     String
+  validationStatus ContentStatus @default(NEEDS_REVIEW)
+  battle           Battle        @relation(fields: [battleId], references: [id], onDelete: Cascade)
+}
+
+model Quest {
+  id              String          @id @default(cuid())
+  gameId          String
+  name            String
+  slug            String
+  description     String?
+  status          ContentStatus   @default(DRAFT)
+  game            Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  startLocationId String?
+  startLocation   Location?       @relation(fields: [startLocationId], references: [id])
+  steps           QuestStep[]
+  isMissable      Boolean         @default(false)
+  contentSources  ContentSource[]
+
+  @@unique([gameId, slug])
+}
+
+model QuestStep {
+  id                      String @id @default(cuid())
+  questId                 String
+  stepNumber              Int
+  description             String
+  prerequisiteJson        Json?
+  completionConditionJson Json?
+  quest                   Quest  @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([questId, stepNumber])
+}
+
+model GameFlag {
+  id          String   @id @default(cuid())
+  gameId      String
+  flagKey     String
+  description String
+  flagType    FlagType
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, flagKey])
+}
+
+model ChecklistTemplate {
+  id          String          @id @default(cuid())
+  gameId      String
+  category    String
+  title       String
+  description String?
+  sortOrder   Int
+  game        Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  items       ChecklistItem[]
+
+  @@unique([gameId, category, title])
+}
+
+model ChecklistItem {
+  id          String            @id @default(cuid())
+  templateId  String
+  title       String
+  description String?
+  locationId  String?
+  itemId      String?
+  pokemonId   String?
+  isMissable  Boolean           @default(false)
+  isRequired  Boolean           @default(false)
+  sortOrder   Int
+  template    ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  location    Location?         @relation(fields: [locationId], references: [id])
+  item        Item?             @relation(fields: [itemId], references: [id])
+  pokemon     Pokemon?          @relation(fields: [pokemonId], references: [id])
+
+  @@unique([templateId, sortOrder])
+}
+
+model User {
+  id            String             @id @default(uuid())
+  email         String             @unique
+  passwordHash  String
+  displayName   String
+  role          UserRole           @default(USER)
+  isActive      Boolean            @default(true)
+  refreshTokens RefreshToken[]
+  progress      UserGameProgress[]
+  teams         Team[]
+  collection    UserCollection[]
+  preferences   UserPreference?
+  auditLogs     AdminAuditLog[]
+  helperConversations HelperConversation[]
+  contentReports ContentReport[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model HelperConversation {
+  id        String          @id @default(uuid())
+  userId    String
+  gameId    String?
+  title     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      Game?           @relation(fields: [gameId], references: [id])
+  messages  HelperMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model HelperMessage {
+  id             String             @id @default(uuid())
+  conversationId String
+  role           String
+  content        String
+  createdAt      DateTime           @default(now())
+  conversation   HelperConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model UserGameProgress {
+  id        String         @id @default(uuid())
+  userId    String
+  gameId    String
+  status    ProgressStatus @default(NOT_STARTED)
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      Game           @relation(fields: [gameId], references: [id])
+
+  @@unique([userId, gameId])
+}
+
+model UserCollection {
+  id        String           @id @default(uuid())
+  userId    String
+  gameId    String
+  pokemonId String
+  status    CollectionStatus
+  isShiny   Boolean          @default(false)
+  nickname  String?
+  notes     String?
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      Game             @relation(fields: [gameId], references: [id])
+  pokemon   Pokemon          @relation(fields: [pokemonId], references: [id])
+
+  @@unique([userId, gameId, pokemonId])
+}
+
+model UserPreference {
+  userId                 String   @id
+  theme                  String   @default("system")
+  defaultGameId          String?
+  spoilerSetting         String   @default("standard")
+  displayPreferencesJson Json?
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Team {
+  id          String       @id @default(uuid())
+  userId      String
+  gameId      String
+  name        String
+  description String?
+  isFavorite  Boolean      @default(false)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game        Game         @relation(fields: [gameId], references: [id])
+  members     TeamMember[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model TeamMember {
+  id        String           @id @default(uuid())
+  teamId    String
+  pokemonId String
+  slot      Int
+  level     Int?
+  nature    String?
+  isShiny   Boolean          @default(false)
+  team      Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  pokemon   Pokemon          @relation(fields: [pokemonId], references: [id])
+  moves     TeamMemberMove[]
+
+  @@unique([teamId, slot])
+}
+
+model TeamMemberMove {
+  teamMemberId String
+  moveId       String
+  slot         Int
+  member       TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  move         Move       @relation(fields: [moveId], references: [id])
+
+  @@id([teamMemberId, moveId])
+  @@unique([teamMemberId, slot])
+}
+
+model SourceRegistry {
+  id             String          @id @default(uuid())
+  name           String
+  sourceType     SourceType
+  url            String
+  organization   String?
+  licenseNotes   String?
+  creditText     String
+  retrievedAt    DateTime        @default(now())
+  records        SourceRecord[]
+  importRuns     DataImportRun[]
+  contentSources ContentSource[]
+}
+
+model SourceRecord {
+  id               String         @id @default(uuid())
+  sourceId         String
+  externalRecordId String
+  contentType      String
+  checksum         String?
+  source           SourceRegistry @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, externalRecordId, contentType])
+}
+
+model DataImportRun {
+  id              String         @id @default(uuid())
+  sourceId        String
+  gameId          String?
+  startedAt       DateTime       @default(now())
+  finishedAt      DateTime?
+  status          String
+  recordsImported Int            @default(0)
+  recordsFailed   Int            @default(0)
+  errorSummary    String?
+  dryRun          Boolean        @default(false)
+  checksum        String?
+  source          SourceRegistry @relation(fields: [sourceId], references: [id])
+  game            Game?          @relation(fields: [gameId], references: [id])
+
+  @@index([sourceId, startedAt])
+  @@index([gameId, startedAt])
+}
+
+model ContentSource {
+  id               String              @id @default(uuid())
+  sourceId         String
+  targetType       String
+  targetId         String
+  relationshipType String
+  externalRecordId String?
+  excerpt          String?
+  source           SourceRegistry      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  gameId           String?
+  game             Game?               @relation(fields: [gameId], references: [id])
+  location         Location?           @relation(fields: [locationId], references: [id])
+  locationId       String?
+  encounter        Encounter?          @relation(fields: [encounterId], references: [id])
+  encounterId      String?
+  chapter          WalkthroughChapter? @relation(fields: [chapterId], references: [id])
+  chapterId        String?
+  battle           Battle?             @relation(fields: [battleId], references: [id])
+  battleId         String?
+  quest            Quest?              @relation(fields: [questId], references: [id])
+  questId          String?
+
+  @@unique([sourceId, targetType, targetId, relationshipType, externalRecordId])
+  @@index([targetType, targetId])
+}
+
+model DataQualityIssue {
+  id          String    @id @default(uuid())
+  gameId      String?
+  targetType  String
+  targetId    String
+  issueType   String
+  description String
+  severity    String
+  status      String    @default("OPEN")
+  reportedBy  String?
+  resolvedAt  DateTime?
+  game        Game?     @relation(fields: [gameId], references: [id])
+
+  @@index([gameId, status])
+  @@index([targetType, targetId])
+}
+
+model PublishedContent {
+  id          String        @id @default(uuid())
+  targetType  String
+  targetId    String
+  status      ContentStatus
+  publishedBy String?
+  publishedAt DateTime?
+  version     Int           @default(1)
+
+  @@unique([targetType, targetId])
+}
+
+model ContentReport {
+  id          String    @id @default(uuid())
+  reporterId  String?
+  targetType  String
+  targetId    String
+  reason      String
+  description String?
+  status      String    @default("OPEN")
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  reporter    User?     @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
+model AdminAuditLog {
+  id          String   @id @default(uuid())
+  adminUserId String
+  action      String
+  targetType  String
+  targetId    String
+  beforeJson  Json?
+  afterJson   Json?
+  createdAt   DateTime @default(now())
+  admin       User     @relation(fields: [adminUserId], references: [id])
+}

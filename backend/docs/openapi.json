@@ -1,0 +1,467 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Yoda Pokémon Guide API",
+    "version": "0.2.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000"
+    }
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Server is alive"
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Dependencies are ready"
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OpenAPI specification"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Account created"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Authenticated session"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Rotated authenticated session"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "responses": {
+          "204": {
+            "description": "Session revoked"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Current user"
+          }
+        }
+      }
+    },
+    "/api/v1/games": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Game library"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Game detail"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/overview": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Game overview"
+          }
+        }
+      }
+    },
+    "/api/v1/pokemon": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Paginated Pokédex collection"
+          }
+        }
+      }
+    },
+    "/api/v1/pokemon/compare": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Pokémon comparison"
+          }
+        }
+      }
+    },
+    "/api/v1/pokemon/{pokemonId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Pokémon detail"
+          }
+        }
+      }
+    },
+    "/api/v1/pokemon/{pokemonId}/evolutions": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Evolution relationships"
+          }
+        }
+      }
+    },
+    "/api/v1/pokemon/{pokemonId}/moves": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Pokémon learnset"
+          }
+        }
+      }
+    },
+    "/api/v1/pokemon/{pokemonId}/encounters": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Pokémon encounters"
+          }
+        }
+      }
+    },
+    "/api/v1/moves": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Move collection"
+          }
+        }
+      }
+    },
+    "/api/v1/moves/{moveId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Move detail"
+          }
+        }
+      }
+    },
+    "/api/v1/abilities": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Ability collection"
+          }
+        }
+      }
+    },
+    "/api/v1/abilities/{abilityId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Ability detail"
+          }
+        }
+      }
+    },
+    "/api/v1/types": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Type collection"
+          }
+        }
+      }
+    },
+    "/api/v1/types/{typeId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Type detail"
+          }
+        }
+      }
+    },
+    "/api/v1/types/chart": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Generation III type chart"
+          }
+        }
+      }
+    },
+    "/api/v1/items": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Item collection"
+          }
+        }
+      }
+    },
+    "/api/v1/items/{itemId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Item detail"
+          }
+        }
+      }
+    },
+    "/api/v1/tools/battle/calculate": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Damage calculation"
+          }
+        }
+      }
+    },
+    "/api/v1/tools/battle/effectiveness": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Type effectiveness"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/locations": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Game locations"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/locations/{locationId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Location detail"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/locations/{locationId}/connections": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Location connections"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/locations/{locationId}/items": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Location items"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/locations/{locationId}/encounters": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Location encounters"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/locations/{locationId}/trainers": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Location trainers"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/encounters": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Game encounters"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/walkthrough": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Published walkthrough"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/walkthrough/chapters": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Walkthrough chapters"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/walkthrough/chapters/{chapterId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Walkthrough chapter"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/walkthrough/chapters/{chapterId}/steps": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Walkthrough steps"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/battles": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Published battles"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/battles/{battleId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Battle detail"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/battles/{battleId}/trainers": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Battle trainers"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/battles/{battleId}/strategy": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Battle strategy"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/quests": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Published quests"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/quests/{questId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Quest detail"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/checklist": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Game checklist"
+          }
+        }
+      }
+    },
+    "/api/v1/games/{gameId}/checklist/categories": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Checklist categories"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "details",
+              "request_id"
+            ]
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "required": [
+          "page",
+          "page_size",
+          "total",
+          "total_pages"
+        ]
+      }
+    }
+  }
+}

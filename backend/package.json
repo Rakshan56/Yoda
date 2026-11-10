@@ -1,0 +1,58 @@
+{
+  "name": "yoda-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "test:users": "tsx scripts/create-test-users.ts",
+    "import:reference": "tsx scripts/import-reference-data.ts",
+    "import:game": "tsx scripts/import-game-data.ts",
+    "generate:game-data": "tsx scripts/generate-pokeapi-game-manifests.ts",
+    "publish:content": "tsx scripts/publish-content.ts",
+    "data:validate": "tsx scripts/validate-data.ts",
+    "openapi:export": "tsx scripts/export-openapi.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.17.0",
+    "argon2": "^0.44.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.9",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^9.9.4",
+    "pino-http": "^10.5.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.7.2",
+    "@types/supertest": "^7.2.1",
+    "eslint": "^9.38.0",
+    "prettier": "^3.6.2",
+    "prisma": "^6.17.0",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

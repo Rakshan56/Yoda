@@ -1,0 +1,25 @@
+import { Router } from "express";
+import { z } from "zod";
+import argon2 from "argon2";
+import jwt from "jsonwebtoken";
+import { randomBytes, createHash } from "node:crypto";
+import { prisma } from "../../lib/prisma.js";
+import { env } from "../../config/env.js";
+import { data } from "../../lib/response.js";
+import { AppError } from "../../lib/errors.js";
+import { authenticate } from "../middleware/authenticate.js";
+import { validate } from "../middleware/validate.js";
+export const authRouter = Router();
+const refreshCookie = "yoda_refresh_token";
+const csrfCookie = "yoda_csrf_token";
+const cookieOptions = { httpOnly: true, secure: env.COOKIE_SECURE, sameSite: env.COOKIE_SAME_SITE, domain: env.COOKIE_DOMAIN || undefined, path: "/api/v1/auth" } as const;
+const csrfOptions = { httpOnly: false, secure: env.COOKIE_SECURE, sameSite: env.COOKIE_SAME_SITE, domain: env.COOKIE_DOMAIN || undefined, path: "/" } as const;
+const credentials = z.object({ body: z.object({ email: z.string().email().transform((value) => value.toLowerCase()), password: z.string().min(12).max(128), display_name: z.string().trim().min(1).max(80).optional() }) });
+authRouter.post("/register", validate(credentials), async (req, res, next) => { try { const input = req.body as { email: string; password: string; display_name?: string }; const existing = await prisma.user.findUnique({ where: { email: input.email } }); if (existing) throw new AppError(409, "CONFLICT", "An account with that email already exists."); const user = await prisma.user.create({ data: { email: input.email, passwordHash: await argon2.hash(input.password, { type: argon2.argon2id }), displayName: input.display_name ?? input.email.split("@")[0] ?? input.email } }); return data(res, { user: userDto(user), ...await issueTokens(user.id, res) }, 201); } catch (error) { next(error); } });
+authRouter.post("/login", validate(credentials), async (req, res, next) => { try { const input = req.body as { email: string; password: string }; const user = await prisma.user.findUnique({ where: { email: input.email } }); if (!user || !user.isActive || !(await argon2.verify(user.passwordHash, input.password))) throw new AppError(401, "UNAUTHENTICATED", "Invalid email or password."); return data(res, { user: userDto(user), ...await issueTokens(user.id, res) }); } catch (error) { next(error); } });
+authRouter.post("/refresh", async (req, res, next) => { try { const raw = req.cookies?.[refreshCookie]; if (!raw) throw new AppError(401, "UNAUTHENTICATED", "A refresh token is required."); const token = await prisma.refreshToken.findUnique({ where: { tokenHash: hash(raw) }, include: { user: true } }); if (!token || token.revokedAt || token.expiresAt <= new Date() || !token.user.isActive) throw new AppError(401, "UNAUTHENTICATED", "The refresh token is invalid or expired."); await prisma.refreshToken.update({ where: { id: token.id }, data: { revokedAt: new Date() } }); return data(res, { user: userDto(token.user), ...await issueTokens(token.userId, res) }); } catch (error) { next(error); } });
+authRouter.get("/me", authenticate, async (req, res, next) => { try { const user = await prisma.user.findUnique({ where: { id: req.auth!.userId } }); if (!user) throw new AppError(401, "UNAUTHENTICATED", "Account no longer exists."); return data(res, userDto(user)); } catch (error) { next(error); } });
+authRouter.post("/logout", authenticate, async (req, res, next) => { try { await prisma.refreshToken.updateMany({ where: { userId: req.auth!.userId, revokedAt: null }, data: { revokedAt: new Date() } }); res.clearCookie(refreshCookie, { ...cookieOptions, maxAge: undefined }); res.clearCookie(csrfCookie, { ...csrfOptions, maxAge: undefined }); return res.status(204).send(); } catch (error) { next(error); } });
+async function issueTokens(userId: string, res: import("express").Response) { const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { role: true } }); const accessToken = jwt.sign({ userId, role: user.role }, env.JWT_ACCESS_SECRET, { expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions["expiresIn"] }); const raw = randomBytes(48).toString("base64url"); const csrf = randomBytes(32).toString("base64url"); await prisma.refreshToken.create({ data: { userId, tokenHash: hash(raw), expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_EXPIRES_DAYS * 86400000) } }); res.cookie(refreshCookie, raw, { ...cookieOptions, maxAge: env.REFRESH_TOKEN_EXPIRES_DAYS * 86400000 }); res.cookie(csrfCookie, csrf, { ...csrfOptions, maxAge: env.REFRESH_TOKEN_EXPIRES_DAYS * 86400000 }); return { access_token: accessToken, expires_in: env.JWT_ACCESS_EXPIRES_IN }; }
+const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+const userDto = (user: { id: string; email: string; displayName: string; role: string }) => ({ id: user.id, email: user.email, display_name: user.displayName, role: user.role });

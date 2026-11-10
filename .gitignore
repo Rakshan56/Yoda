@@ -1,0 +1,47 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Dependencies
+node_modules/
+
+# Frontend build output
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+
+# Backend build and test output
+backend/dist/
+backend/coverage/
+
+# Test, tool, and cache output
+coverage/
+.cache/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+
+# Runtime data and logs
+*.log
+logs/
+tmp/
+temp/
+
+# Local database and generated artifacts
+*.db
+*.sqlite
+*.sqlite3
+backend/data/generated/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Prisma local artifacts
+backend/node_modules/.prisma/

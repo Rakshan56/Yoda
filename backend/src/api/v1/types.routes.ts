@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { prisma } from "../../lib/prisma.js";
+import { data } from "../../lib/response.js";
+import { calculateTypeEffectiveness, GENERATION_III_TYPES } from "../../services/type-chart.service.js";
+import { AppError } from "../../lib/errors.js";
+export const typesRouter = Router();
+typesRouter.get("/", async (_req, res, next) => { try { const types = await prisma.type.findMany({ orderBy: { name: "asc" } }); return data(res, types.map(typeDto)); } catch (error) { next(error); } });
+typesRouter.get("/chart", (req, res, next) => { try { const moveType = typeof req.query.move_type === "string" ? req.query.move_type : undefined; const defenderTypes = typeof req.query.defender_types === "string" ? req.query.defender_types.split(",").filter(Boolean) : undefined; if (!moveType || !defenderTypes?.length) throw new AppError(422, "VALIDATION_ERROR", "move_type and defender_types are required."); return data(res, { game_id: req.query.game_id ?? "emerald", move_type: moveType, defender_types: defenderTypes, multiplier: calculateTypeEffectiveness(moveType, defenderTypes, String(req.query.game_id ?? "emerald")), supported_types: GENERATION_III_TYPES }); } catch (error) { next(error); } });
+typesRouter.get("/:typeId", async (req, res, next) => { try { const type = await prisma.type.findUnique({ where: { id: String(req.params.typeId) } }); return type ? data(res, typeDto(type)) : next(new AppError(404, "RESOURCE_NOT_FOUND", "Type not found.")); } catch (error) { next(error); } });
+const typeDto = (type: { id: string; name: string }) => ({ id: type.id, name: type.name });

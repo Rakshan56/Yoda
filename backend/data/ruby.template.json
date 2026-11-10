@@ -1,0 +1,14 @@
+{
+  "game_id": "ruby",
+  "source": {
+    "id": "replace-with-reviewed-ruby-source-id",
+    "name": "Reviewed Ruby source name",
+    "url": "https://example.com/reviewed-source/ruby",
+    "organization": "Source maintainers",
+    "license_notes": "Record the applicable license before importing.",
+    "credit_text": "Game data imported from the reviewed Ruby source."
+  },
+  "locations": [],
+  "connections": [],
+  "encounters": []
+}
